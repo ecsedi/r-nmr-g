@@ -1,0 +1,67 @@
+version: "3.3"
+
+services:
+
+  webserver:
+    image: nginx:latest
+    ports:
+      - ${HTTP_PORT}:80
+      - ${HTTPS_PORT}:443
+    restart: always
+    volumes:
+      - ./volumes/nginx/etc/nginx/conf.d/:/etc/nginx/conf.d/:ro
+      - ./volumes/certbot/var/www/certbot/:/var/www/certbot/:ro
+      - ./volumes/certbot/etc/letsencrypt/:/etc/letsencrypt/:ro
+    depends_on:
+      - guacamole
+
+  guacamole:
+    image:   guacamole/guacamole
+    restart: always
+    environment:
+      GUACD_HOSTNAME: "guacd"
+      MYSQL_HOSTNAME: "guadb"
+      MYSQL_DATABASE: "guacamole"
+      MYSQL_USER:     "guacamole"
+      MYSQL_PASSWORD: "${GUACAMOLE_DB_PASSWORD}"
+      #
+      #LDAP_HOSTNAME:           "ldap.example.com"
+      #LDAP_USER_BASE_DN:       "ou=people,dc=example,dc=com"
+      #LDAP_PORT:               "389"
+      #LDAP_ENCRYPTION_METHOD:  "starttls"
+      #LDAP_USERNAME_ATTRIBUTE: "uid"
+      #
+      #OPENID_AUTHORIZATION_ENDPOINT: "https://keycloak.example.com/realms/r-nmr/protocol/openid-connect/auth"
+      #OPENID_JWKS_ENDPOINT:          "https://keycloak.example.com/realms/r-nmr/protocol/openid-connect/certs"
+      #OPENID_ISSUER:                 "https://keycloak.example.com/realms/r-nmr"
+      #OPENID_CLIENT_ID:              "guacamole"
+      #OPENID_REDIRECT_URI:           "https://guacamole.example.com/guacamole"
+      #
+      #SAML_IDP_METADATA_URL: "https://idp.example.com/simplesaml/saml2/idp/metadata.php"
+      #SAML_ENTITY_ID:        "https://guacamole.example.com"
+      #SAML_CALLBACK_URL:     "https://guacamole.exampl.com/guacamole"
+      #SAML_DEBUG:            "true"
+      #SAML_STRICT:           "false"
+      #SKIP_IF_UNAVAILABLE:   "saml"
+      #
+      #EXTENSION_PRIORITY: "*, saml"
+      #EXTENSION_PRIORITY: "ldap, mysql"
+    #ports:
+    #  - "${HTTP_PORT}:8080"
+    #volumes:
+    #  - ./volumes/guacamole/opt/java/openjdk/jre/lib/security/cacerts:/opt/java/openjdk/jre/lib/security/cacerts:ro
+    depends_on:
+      - guacd
+      - guadb
+
+  guacd:
+    image:   guacamole/guacd
+    restart: always
+
+  guadb:
+    image:   mariadb:10.7.3
+    restart: always
+    volumes:
+      - ./volumes/guadb/var/lib/mysql/:/var/lib/mysql/:rw
+    environment:
+      MARIADB_RANDOM_ROOT_PASSWORD: "TRUE"
